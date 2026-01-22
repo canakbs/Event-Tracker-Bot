@@ -1,48 +1,59 @@
-name: Etkinlik Botu Günlük Kontrol
+name: Etkinlik Botu - Telegram Bildirimi
 
 on:
-  # 1. Zamanlanmış Tetikleyici (Cron Job)
+  # Günlük otomatik çalışma (Her gün TR saati 10:00)
   schedule:
-    # UTC saatiyle 07:00'de çalışır.
-    # Türkiye (UTC+3) saatiyle sabah 10:00'a dsenk gelir.
-    # Saati değiştirmek için: https://crontab.guru/
-    - cron: '0 7 * * *'
-  
-  # 2. Manuel Tetikleyici (Test etmek isterseniz butona basarak çalıştırırsınız)
+    - cron: "0 7 * * *" # UTC 07:00 = TR 10:00
+
+  # Manuel test butonu
   workflow_dispatch:
 
 jobs:
-  build:
+  etkinlik-kontrol:
     runs-on: ubuntu-latest
 
     steps:
-      # Kodları depodan çek
-      - name: Depoyu Kontrol Et (Checkout)
+      # 1. Kodları çek
+      - name: Repository'yi Çek
         uses: actions/checkout@v3
 
-      # Python Kurulumu
-      - name: Python Kurulumu (3.10)
+      # 2. Python kur
+      - name: Python 3.10 Kurulumu
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
-      # Chrome Tarayıcı Kurulumu (Selenium için gerekli)
-      - name: Chrome Tarayıcıyı Kur
+      # 3. Chrome kur
+      - name: Chrome Kurulumu
         uses: browser-actions/setup-chrome@latest
         with:
           chrome-version: stable
 
-      # Gerekli Kütüphanelerin Yüklenmesi
-      - name: Kütüphaneleri Yükle
+      # 4. Kütüphaneleri yükle
+      - name: Gereksinimleri Yükle
         run: |
           python -m pip install --upgrade pip
-          pip install requests gspread oauth2client selenium webdriver-manager beautifulsoup4 fake-useragent
+          pip install selenium webdriver-manager beautifulsoup4 requests fake-useragent
 
-      # Botun Çalıştırılması
-      - name: Botu Çalıştır
+      # 5. Önceki kayıtları geri yükle (eğer varsa)
+      - name: Önceki Kayıtları Yükle
+        uses: actions/cache@v3
+        with:
+          path: gonderilen_linkler.txt
+          key: etkinlik-kayitlar-${{ github.run_id }}
+          restore-keys: |
+            etkinlik-kayitlar-
+
+      # 6. Botu çalıştır
+      - name: Etkinlik Botunu Çalıştır
         env:
-          # GitHub Secrets kısmına eklediğiniz değişkenler buraya çekilir
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          G_SHEET_CREDS: ${{ secrets.G_SHEET_CREDS }}
-        # Script dosyanızın adı 'main.py' ise bu şekilde kalmalı. Farklıysa değiştirin.
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python main.py
+
+      # 7. Yeni kayıtları sakla (bir sonraki çalışma için)
+      - name: Kayıtları Sakla
+        uses: actions/cache@v3
+        with:
+          path: gonderilen_linkler.txt
+          key: etkinlik-kayitlar-${{ github.run_id }}
