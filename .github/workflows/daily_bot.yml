@@ -3,7 +3,7 @@ name: Etkinlik Botu - Telegram Bildirimi
 on:
   # Günlük otomatik çalışma (Her gün TR saati 10:00)
   schedule:
-    - cron: "0 7 * * *" # UTC 07:00 = TR 10:00
+    - cron: "*/15 * * * *" # Her 15 dakikada bir (TEST)
 
   # Manuel test butonu
   workflow_dispatch:
